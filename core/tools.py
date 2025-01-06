@@ -36,19 +36,28 @@ def VideoSearch(
 
 
 @tool
-def ImageSearch(query: str, max_results=5) -> str:
+def ImageSearch(
+    query: str,
+    region="wt-wt",
+    safesearch="off",
+    timelimit="m",
+    max_results=5
+) -> str:
     """Use this to get images."""
 
-    query = f"""
-        Direct URL of image files (JPEG, PNG, SVG, ...) related to the following content:
-        \n{query}
-    """
-
     try:
-        ddg = DDGS()
-        results = ddg.text(query, max_results=max_results)
-        print(results[0])
-        # yt_videos = [i for i in results
-        #              if i["href"].startswith("https://www.youtube.com/watch?v=")]
+        results = DDGS().images(
+            keywords=query,
+            region=region,
+            safesearch=safesearch,
+            timelimit=timelimit,
+            max_results=max_results
+        )
+        images = [{
+            "title": i["title"],
+            "thumbnail": i["thumbnail"]
+        } for i in results]
+
+        return str(images)
     except Exception as e:
         return ""
