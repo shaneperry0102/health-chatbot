@@ -6,7 +6,7 @@ from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 import ast
 import os
 
-from core.agents import HealthAgent, VideoAgent
+from core.agents import Agent
 from core.tools import TavilySearch, VideoSearch
 from utils import video_dialog, search_dialog
 
@@ -66,8 +66,6 @@ if "chat_history" not in st.session_state:
 bar.button('Clear Chat History', on_click=init_chat_history)
 
 
-tools = []
-
 system_prompt = """You are a smart healthcare assistant. You should first check if the questions are related to healthcare. \
 If not, do not answer, just refuse it, like "Sorry, I can't answer that question.". \
 Use the search engine to look up information if needed. \
@@ -78,7 +76,7 @@ If you need to look up some information before asking a follow up question, you 
 
 
 @st.cache_resource
-def create_health_agent():
+def create_agent(tools: list, system=system_prompt):
     model = ChatGroq(
         model=selected_model,
         temperature=temperature,
@@ -87,22 +85,8 @@ def create_health_agent():
         max_retries=2,
         streaming=True
     )
-    health_agent = HealthAgent(model, tools, system=system_prompt)
-    return health_agent
-
-
-@st.cache_resource
-def create_video_agent():
-    model = ChatGroq(
-        model=selected_model,
-        temperature=temperature,
-        max_tokens=None,
-        timeout=None,
-        max_retries=2,
-        streaming=True
-    )
-    yt_agent = VideoAgent(model, system=system_prompt)
-    return yt_agent
+    agent = Agent(model=model, tools=tools, system=system)
+    return agent
 
 
 messages = st.container()
@@ -135,8 +119,8 @@ if user_prompt := st.chat_input(placeholder="Message Here", disabled=not groq_ap
 
     thread = {"configurable": {"thread_id": "4"}}
     aimessages = ""
-    health_graph = create_health_agent().graph
-    yt_graph = create_video_agent().graph
+    health_graph = create_agent(tools=[]).graph
+    video_graph = create_agent(tools=[VideoSearch]).graph
 
     tool_text_list = []
     searchResults = None
@@ -163,7 +147,7 @@ if user_prompt := st.chat_input(placeholder="Message Here", disabled=not groq_ap
                 if st.button("Sources", key=searchResults):
                     search_dialog(searchResults)
 
-            for event in yt_graph.stream(
+            for event in video_graph.stream(
                 input={"messages": st.session_state["messages"]},
                 config=thread,
                 stream_mode="values"
