@@ -1,8 +1,5 @@
-from langchain_community.tools.tavily_search import TavilySearchResults
-
-from typing import Literal
 from langchain_core.tools import tool
-
+from langchain_community.tools.tavily_search import TavilySearchResults
 from duckduckgo_search import DDGS
 
 
@@ -10,24 +7,28 @@ TavilySearch = TavilySearchResults(max_results=5)
 
 
 @tool
-def YoutubeSearch(query: str, max_results=5) -> str:
-    """Use this to get youtube videos."""
-
-    query = f"""
-        YouTube videos related to the following content:
-        \n{query}
-    """
+def VideoSearch(
+    query: str,
+    region="wt-wt",
+    safesearch="off",
+    timelimit="m",
+    resolution="high",
+    duration="long",
+    max_results=5
+) -> str:
+    """Use this to get videos."""
 
     try:
-        ddg = DDGS()
-        results = ddg.text(query, max_results=max_results)
-        yt_videos = [i for i in results
-                     if i["href"].startswith("https://www.youtube.com/watch?v=")]
-        videos = []
-        for yt_video in yt_videos:
-            id = yt_video["href"].removeprefix(
-                "https://www.youtube.com/watch?v=")
-            videos.append(id)
+        results = DDGS().videos(
+            keywords=query,
+            region=region,
+            safesearch=safesearch,
+            timelimit=timelimit,
+            resolution=resolution,
+            duration=duration,
+            max_results=max_results
+        )
+        videos = [i["embed_url"] for i in results]
 
         return str(videos)
     except Exception as e:
@@ -35,7 +36,7 @@ def YoutubeSearch(query: str, max_results=5) -> str:
 
 
 @tool
-def image_search(query: str, max_results=5) -> str:
+def ImageSearch(query: str, max_results=5) -> str:
     """Use this to get images."""
 
     query = f"""
@@ -51,6 +52,3 @@ def image_search(query: str, max_results=5) -> str:
         #              if i["href"].startswith("https://www.youtube.com/watch?v=")]
     except Exception as e:
         return ""
-
-
-# image_search("What is a heart attack?")

@@ -6,8 +6,9 @@ from langchain_core.messages import HumanMessage, AIMessage, ToolMessage
 import ast
 import os
 
-from core import HealthAgent, YouTubeAgent, TavilySearch, YoutubeSearch
-from utils import youtube_dialog, search_dialog
+from core.agents import HealthAgent, VideoAgent
+from core.tools import TavilySearch, VideoSearch
+from utils import video_dialog, search_dialog
 
 
 # Page configuration
@@ -65,7 +66,7 @@ if "chat_history" not in st.session_state:
 bar.button('Clear Chat History', on_click=init_chat_history)
 
 
-tools = [TavilySearch]
+tools = []
 
 system_prompt = """You are a smart healthcare assistant. You should first check if the questions are related to healthcare. \
 If not, do not answer, just refuse it, like "Sorry, I can't answer that question.". \
@@ -91,7 +92,7 @@ def create_health_agent():
 
 
 @st.cache_resource
-def create_yt_agent():
+def create_video_agent():
     model = ChatGroq(
         model=selected_model,
         temperature=temperature,
@@ -100,7 +101,7 @@ def create_yt_agent():
         max_retries=2,
         streaming=True
     )
-    yt_agent = YouTubeAgent(model, system=system_prompt)
+    yt_agent = VideoAgent(model, system=system_prompt)
     return yt_agent
 
 
@@ -117,7 +118,7 @@ for message in st.session_state["chat_history"]:
                 assistant_chat.markdown(part["text"])
             elif part["type"] == "youtube":
                 if assistant_chat.button("Videos", key=part["list"]):
-                    youtube_dialog(part["list"])
+                    video_dialog(part["list"])
             elif part["type"] == "search":
                 if assistant_chat.button("Sources", key=part["list"]):
                     search_dialog(part["list"])
@@ -135,7 +136,7 @@ if user_prompt := st.chat_input(placeholder="Message Here", disabled=not groq_ap
     thread = {"configurable": {"thread_id": "4"}}
     aimessages = ""
     health_graph = create_health_agent().graph
-    yt_graph = create_yt_agent().graph
+    yt_graph = create_video_agent().graph
 
     tool_text_list = []
     searchResults = None
@@ -168,13 +169,13 @@ if user_prompt := st.chat_input(placeholder="Message Here", disabled=not groq_ap
                 stream_mode="values"
             ):
                 message = event["messages"][-1]
-                if isinstance(message, ToolMessage) and message.name == YoutubeSearch.name:
+                if isinstance(message, ToolMessage) and message.name == VideoSearch.name:
                     results = ast.literal_eval(message.content)
                     if len(results):
                         tool_text_list.append(
                             {"type": "youtube", "list": results})
                         if st.button("Videos", key=results):
-                            youtube_dialog(results)
+                            video_dialog(results)
 
     st.session_state["messages"].append(AIMessage(content=aimessages))
     st.session_state["chat_history"].append(
