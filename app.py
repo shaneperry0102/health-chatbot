@@ -46,7 +46,7 @@ with st.sidebar:
     selected_model = st.sidebar.selectbox(
         'Choose a Groq model', ['llama3-70b-8192'], key='selected_model')
     temperature = st.sidebar.slider(
-        'temperature', min_value=0.01, max_value=1.0, value=1.0, step=0.01)
+        'temperature', min_value=0.01, max_value=2.0, value=1.0, step=0.01)
 
     st.write(
         "[View the source code](https://github.com/shaneperry0102/health-chatbot/blob/main/app.py)")
