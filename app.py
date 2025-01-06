@@ -75,7 +75,6 @@ If you need to look up some information before asking a follow up question, you 
 """
 
 
-@st.cache_resource
 def create_agent(tools: list, system=system_prompt):
     model = ChatGroq(
         model=selected_model,
